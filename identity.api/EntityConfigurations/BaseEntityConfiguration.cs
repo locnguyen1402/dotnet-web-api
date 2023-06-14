@@ -11,6 +11,6 @@ public abstract class BaseEntityConfiguration<TBase> : IEntityTypeConfiguration<
         builder.HasKey(e => e.Id);
 
         builder.Property(e => e.Id)
-            .HasDefaultValueSql("NEWSEQUENTIALID()");
+            .HasDefaultValueSql("gen_random_uuid()");
     }
 }

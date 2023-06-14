@@ -6,6 +6,7 @@ using IdentityApi.Models;
 using System.Text.Json;
 using IdentityApi.Services.IServices;
 using IdentityApi.Services;
+using IdentityApi.Seeds;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -49,5 +50,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.Seed001();
 
 app.Run();

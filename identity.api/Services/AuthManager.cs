@@ -28,9 +28,11 @@ public class AuthManager : IAuthManager
     {
         var claims = await GetClaims(user);
 
-        var token = GenerateTokenOptions(GetSigningCredentials(), claims);
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var tokenDescriptor = GenerateTokenOptions(GetSigningCredentials(), claims);
+        var token = tokenHandler.CreateToken(tokenDescriptor);
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return tokenHandler.WriteToken(token);
     }
 
     private SigningCredentials GetSigningCredentials()
@@ -41,20 +43,20 @@ public class AuthManager : IAuthManager
         return new SigningCredentials(secret, SecurityAlgorithms.HmacSha256);
     }
 
-    private JwtSecurityToken GenerateTokenOptions(SigningCredentials signingCredentials, List<Claim> claims)
+    private SecurityTokenDescriptor GenerateTokenOptions(SigningCredentials signingCredentials, List<Claim> claims)
     {
         var jwtSettings = _configuration.GetSection("Jwt").Get<JwtSetting>()!;
         var expiration = DateTime.Now.AddMinutes(Convert.ToDouble(jwtSettings.LifetimeInMinutes));
 
-        var token = new JwtSecurityToken
-        (
-            issuer: jwtSettings.Issuer,
-            claims: claims,
-            expires: expiration,
-            signingCredentials: signingCredentials
-        );
+        var tokenDescriptor = new SecurityTokenDescriptor()
+        {
+            Expires = expiration,
+            SigningCredentials = signingCredentials,
+            Subject = new ClaimsIdentity(claims),
+        };
 
-        return token;
+
+        return tokenDescriptor;
     }
 
     private async Task<List<Claim>> GetClaims(AppUser user)

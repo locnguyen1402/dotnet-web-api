@@ -1,5 +1,6 @@
 using System.Net;
 using AutoMapper;
+using IdentityApi.Constants;
 using IdentityApi.Controllers.Requests;
 using IdentityApi.Models;
 using IdentityApi.Services.IServices;
@@ -46,6 +47,8 @@ public class AccountController : BaseController
                 }
                 return BadRequest(ModelState);
             }
+
+            await _userManager.AddToRoleAsync(user, RoleNameConstants.USER);
 
             return Accepted();
 

@@ -53,6 +53,7 @@ public class AuthManager : IAuthManager
             Expires = expiration,
             SigningCredentials = signingCredentials,
             Subject = new ClaimsIdentity(claims),
+            Issuer = jwtSettings.Issuer,
         };
 
 

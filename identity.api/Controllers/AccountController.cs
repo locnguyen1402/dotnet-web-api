@@ -23,7 +23,7 @@ public class AccountController : BaseController
         _authManager = authManager;
     }
 
-    [HttpPost("/register")]
+    [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest registerRequest)
     {
         if (!ModelState.IsValid)
@@ -59,7 +59,7 @@ public class AccountController : BaseController
         }
     }
 
-    [HttpPost("/login")]
+    [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest loginRequest)
     {
         if (!ModelState.IsValid)

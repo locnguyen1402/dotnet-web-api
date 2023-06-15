@@ -7,8 +7,16 @@ using System.Text.Json;
 using IdentityApi.Services.IServices;
 using IdentityApi.Services;
 using IdentityApi.Seeds;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using IdentityApi.Settings;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var configuration = builder.Configuration;
+var jwtSettings = configuration.GetSection("Jwt").Get<JwtSetting>()!;
 
 builder.Services
     .AddDbContext<AppDbContext>(options =>
@@ -18,7 +26,26 @@ builder.Services
 
 builder.Services
     .AddIdentity<AppUser, AppRole>()
-    .AddEntityFrameworkStores<AppDbContext>();
+    .AddEntityFrameworkStores<AppDbContext>()
+    .AddDefaultTokenProviders();
+
+builder.Services
+    .AddAuthentication(options =>
+    {
+        options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    })
+    .AddJwtBearer(options =>
+    {
+      options.TokenValidationParameters = new TokenValidationParameters()
+      {
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings.Issuer,
+        ValidateAudience = false,
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+      };
+    });
 
 builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
@@ -47,6 +74,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

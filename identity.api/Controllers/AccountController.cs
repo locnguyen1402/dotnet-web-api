@@ -1,9 +1,11 @@
 using System.Net;
+using System.Reflection;
 using AutoMapper;
 using IdentityApi.Constants;
 using IdentityApi.Controllers.Requests;
 using IdentityApi.Models;
 using IdentityApi.Services.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,8 +18,9 @@ public class AccountController : BaseController
         ILogger<AccountController> logger,
         IMapper mapper,
         UserManager<AppUser> userManager,
-        IAuthManager authManager
-    ) : base(logger, mapper)
+        IAuthManager authManager,
+        IIdentityService identityService
+    ) : base(logger, mapper, identityService)
     {
         _userManager = userManager;
         _authManager = authManager;
@@ -85,4 +88,20 @@ public class AccountController : BaseController
 
         return Ok(new { AccessToken = token });
     }
+
+    [HttpGet("permissions")]
+    public IActionResult GetPermissions()
+    {
+
+        return Ok(PermissionsConstants.GetPermissionList());
+    }
+
+    [HttpGet("permissions/me")]
+    [Authorize]
+    public IActionResult GetMyPermissions()
+    {
+
+        return Ok(_identityService.PermissionClaims);
+    }
+
 }

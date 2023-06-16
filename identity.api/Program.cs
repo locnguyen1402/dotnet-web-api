@@ -12,6 +12,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using IdentityApi.Settings;
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
+using IdentityApi.Auth.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,19 +39,25 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
-      options.TokenValidationParameters = new TokenValidationParameters()
-      {
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings.Issuer,
-        ValidateAudience = false,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
-      };
+        options.TokenValidationParameters = new TokenValidationParameters()
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = false,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.Key)),
+        };
     });
+
+builder.Services.AddSingleton<IAuthorizationPolicyProvider, ClaimsPolicyProvider>();
+builder.Services.AddSingleton<IAuthorizationHandler, ClaimsAuthorizeHandler>();
 
 builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<IAuthManager, AuthManager>();
+builder.Services.AddScoped<IIdentityService, IdentityService>();
 
 builder.Services
     .AddControllers()

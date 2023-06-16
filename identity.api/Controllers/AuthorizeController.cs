@@ -1,23 +1,36 @@
-using System.Net;
 using AutoMapper;
+using IdentityApi.Auth.Authorization;
 using IdentityApi.Constants;
-using IdentityApi.Controllers.Requests;
-using IdentityApi.Models;
 using IdentityApi.Services.IServices;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 namespace IdentityApi.Controllers;
 public class AuthorizeController : BaseController
 {
-
     public AuthorizeController(
         ILogger<AccountController> logger,
-        IMapper mapper
-    ) : base(logger, mapper)
+        IMapper mapper,
+        IIdentityService identityService
+    ) : base(logger, mapper, identityService)
     {
+    }
+
+    [ClaimsAuthorize(new string[] { PermissionsConstants.GET_USER, PermissionsConstants.GET_USERS }, CheckType = ClaimsCheckType.HasAll)]
+    [HttpGet("claims/test")]
+    public IActionResult TestClaims()
+    {
+        return Ok();
+    }
+
+    [Authorize]
+    [HttpGet("claims/me")]
+    public IActionResult GetMyClaims()
+    {
+        return Ok(new
+        {
+            claims = _identityService.PermissionClaims,
+        });
     }
 
     [Authorize]

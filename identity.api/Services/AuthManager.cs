@@ -6,6 +6,8 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using IdentityApi.Settings;
+using IdentityApi.Constants;
+using Microsoft.EntityFrameworkCore;
 
 namespace IdentityApi.Services;
 
@@ -64,14 +66,29 @@ public class AuthManager : IAuthManager
     {
         var claims = new List<Claim>()
         {
-            new Claim(ClaimTypes.Name, user.UserName!),
+            new Claim(SecurityClaimTypes.Subject, user.Id.ToString()),
         };
 
         var roles = await _userManager.GetRolesAsync(user);
 
         foreach (var role in roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim(SecurityClaimTypes.Role, role));
+        }
+
+        var roleClaims = await _roleManager.Roles
+                            .AsNoTracking()
+                            .Include(r => r.RoleClaims)
+                            .Include(r => r.UserRoles)
+                            .Where(r => r.UserRoles.Any(t => t.UserId == user.Id))
+                            .SelectMany(r => r.RoleClaims)
+                            .Where(rl => rl.ClaimType == SecurityClaimTypes.Permission)
+                            .Select(r => r.ClaimValue)
+                            .ToListAsync();
+
+        foreach (var claim in roleClaims)
+        {
+            claims.Add(new Claim(SecurityClaimTypes.Permission, claim!));
         }
 
         return claims;

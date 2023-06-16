@@ -11,9 +11,8 @@ public enum ClaimsCheckType
 
 public class ClaimsAuthorizeAttribute : AuthorizeAttribute
 {
-    public ClaimsCheckType CheckType { get; set; } = ClaimsCheckType.HasOne;
-    public ClaimsAuthorizeAttribute(string[] claims)
+    public ClaimsAuthorizeAttribute(ClaimsCheckType checkType, string[] claims)
     {
-        Policy = $"{CheckType.ToString()}{string.Join(",", claims)}";
+        Policy = $"{checkType.ToString()}{string.Join(",", claims)}";
     }
 }

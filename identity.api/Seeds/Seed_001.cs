@@ -43,7 +43,7 @@ public static class Seed_001
 
         var perms = PermissionsConstants.GetPermissionList();
 
-        if (adminRole != null)
+        if (adminRole != null && !dbContext.RoleClaims.Any(rl => rl.RoleId == adminRole.Id))
         {
             var claims = new List<AppRoleClaim>();
 

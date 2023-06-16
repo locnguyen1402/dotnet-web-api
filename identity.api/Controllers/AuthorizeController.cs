@@ -16,9 +16,23 @@ public class AuthorizeController : BaseController
     {
     }
 
-    [ClaimsAuthorize(new string[] { PermissionsConstants.GET_USER, PermissionsConstants.GET_USERS }, CheckType = ClaimsCheckType.HasAll)]
-    [HttpGet("claims/test")]
-    public IActionResult TestClaims()
+    [ClaimsAuthorize(ClaimsCheckType.HasAll, new string[] { PermissionsConstants.GET_USERS, PermissionsConstants.GET_USER, PermissionsConstants.GET_STAFFS })]
+    [HttpGet("claims/test/has-all")]
+    public IActionResult TestHasAll()
+    {
+        return Ok();
+    }
+
+    [ClaimsAuthorize(ClaimsCheckType.HasOne, new string[] { PermissionsConstants.GET_USER })]
+    [HttpGet("claims/test/has-one")]
+    public IActionResult TestHasOne()
+    {
+        return Ok();
+    }
+
+    [ClaimsAuthorize(ClaimsCheckType.HasAny, new string[] { PermissionsConstants.GET_USERS, PermissionsConstants.GET_USER })]
+    [HttpGet("claims/test/has-any")]
+    public IActionResult TestHasAny()
     {
         return Ok();
     }

@@ -4,6 +4,7 @@ using IdentityApi.Constants;
 using IdentityApi.Controllers.Requests;
 using IdentityApi.Models;
 using IdentityApi.Services.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,15 +13,19 @@ public class AccountController : BaseController
 {
     private IAuthManager _authManager;
     private UserManager<AppUser> _userManager;
+    private RoleManager<AppRole> _roleManager;
     public AccountController(
         ILogger<AccountController> logger,
         IMapper mapper,
         UserManager<AppUser> userManager,
-        IAuthManager authManager
-    ) : base(logger, mapper)
+        IAuthManager authManager,
+        IIdentityService identityService,
+        RoleManager<AppRole> roleManager
+    ) : base(logger, mapper, identityService)
     {
         _userManager = userManager;
         _authManager = authManager;
+        _roleManager = roleManager;
     }
 
     [HttpPost("register")]
@@ -84,5 +89,45 @@ public class AccountController : BaseController
         var token = await _authManager.CreateTokenAsync(user);
 
         return Ok(new { AccessToken = token });
+    }
+
+    [HttpGet("permissions")]
+    public IActionResult GetPermissions()
+    {
+
+        return Ok(PermissionsConstants.GetPermissionList());
+    }
+
+    [HttpGet("permissions/me")]
+    [Authorize]
+    public IActionResult GetMyPermissions()
+    {
+
+        return Ok(_identityService.PermissionClaims);
+    }
+
+    [Authorize(Roles = RoleNameConstants.ADMIN)]
+    [HttpPost("claims/assign")]
+    public async Task<IActionResult> AssignClaims([FromBody] AssignRoleClaimsRequest request)
+    {
+        var role = await _roleManager.FindByNameAsync(request.RoleName.ToString());
+
+        if (role == null)
+        {
+            return BadRequest("Role not found");
+        }
+
+        var perms = PermissionsConstants.GetPermissionList();
+
+        var isValidPerms = request.Claims.All(p => perms.Any(c => c.Value == p));
+
+        if (!isValidPerms)
+        {
+            return BadRequest("Permission not found");
+        }
+
+        await _authManager.AddClaimsToRoleAsync(role, request.Claims);
+
+        return Ok();
     }
 }

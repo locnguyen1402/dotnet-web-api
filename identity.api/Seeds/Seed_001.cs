@@ -1,6 +1,9 @@
+using System.Reflection;
 using IdentityApi.Constants;
+using IdentityApi.Data;
 using IdentityApi.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace IdentityApi.Seeds;
 
@@ -18,6 +21,7 @@ public static class Seed_001
                 {
                     await InitRolesAsync(serviceProvider);
                     await InitUsersAsync(serviceProvider);
+                    await InitRoleClaimsAsync(serviceProvider);
                 })
              .GetAwaiter()
              .GetResult();
@@ -29,6 +33,33 @@ public static class Seed_001
         }
 
         return application;
+    }
+
+    private static async Task InitRoleClaimsAsync(IServiceProvider serviceProvider)
+    {
+        var dbContext = serviceProvider.GetRequiredService<AppDbContext>();
+
+        var adminRole = await dbContext.Roles.AsNoTracking().FirstOrDefaultAsync(r => r.Name == RoleNameConstants.ADMIN);
+
+        var perms = PermissionsConstants.GetPermissionList();
+
+        if (adminRole != null && !dbContext.RoleClaims.Any(rl => rl.RoleId == adminRole.Id))
+        {
+            var claims = new List<AppRoleClaim>();
+
+            foreach (var perm in perms)
+            {
+                claims.Add(new AppRoleClaim
+                {
+                    RoleId = adminRole.Id,
+                    ClaimType = SecurityClaimTypes.Permission,
+                    ClaimValue = perm.Value
+                });
+            }
+
+            dbContext.RoleClaims.AddRange(claims);
+            await dbContext.SaveChangesAsync();
+        }
     }
 
     private static async Task InitRolesAsync(IServiceProvider serviceProvider)

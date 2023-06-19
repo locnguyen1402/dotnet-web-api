@@ -6,6 +6,9 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using System.Text;
 using IdentityApi.Settings;
+using IdentityApi.Constants;
+using Microsoft.EntityFrameworkCore;
+using IdentityApi.Data;
 
 namespace IdentityApi.Services;
 
@@ -13,16 +16,19 @@ public class AuthManager : IAuthManager
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly RoleManager<AppRole> _roleManager;
+    private readonly AppDbContext _db;
     private readonly IConfiguration _configuration;
     public AuthManager(
         UserManager<AppUser> userManager,
         RoleManager<AppRole> roleManager,
-        IConfiguration configuration
+        IConfiguration configuration,
+        AppDbContext db
     )
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
+        _db = db;
     }
     public async ValueTask<string> CreateTokenAsync(AppUser user)
     {
@@ -64,16 +70,50 @@ public class AuthManager : IAuthManager
     {
         var claims = new List<Claim>()
         {
-            new Claim(ClaimTypes.Name, user.UserName!),
+            new Claim(SecurityClaimTypes.Subject, user.Id.ToString()),
         };
 
         var roles = await _userManager.GetRolesAsync(user);
 
         foreach (var role in roles)
         {
-            claims.Add(new Claim(ClaimTypes.Role, role));
+            claims.Add(new Claim(SecurityClaimTypes.Role, role));
+        }
+
+        var roleClaims = await _roleManager.Roles
+                            .AsNoTracking()
+                            .Include(r => r.RoleClaims)
+                            .Include(r => r.UserRoles)
+                            .Where(r => r.UserRoles.Any(t => t.UserId == user.Id))
+                            .SelectMany(r => r.RoleClaims)
+                            .Where(rl => rl.ClaimType == SecurityClaimTypes.Permission)
+                            .Select(r => r.ClaimValue)
+                            .Distinct()
+                            .ToListAsync();
+
+        foreach (var claim in roleClaims)
+        {
+            claims.Add(new Claim(SecurityClaimTypes.Permission, claim!));
         }
 
         return claims;
+    }
+
+    public async Task AddClaimsToRoleAsync(AppRole role, string[] claimValues)
+    {
+        var claims = new List<AppRoleClaim>();
+
+        foreach (var claim in claimValues.Distinct())
+        {
+            claims.Add(new AppRoleClaim
+            {
+                RoleId = role.Id,
+                ClaimType = SecurityClaimTypes.Permission,
+                ClaimValue = claim
+            });
+        }
+
+        _db.RoleClaims.AddRange(claims);
+        await _db.SaveChangesAsync();
     }
 }

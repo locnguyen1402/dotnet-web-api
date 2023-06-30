@@ -1,0 +1,8 @@
+version: "3.8"
+services:
+  identity.api:
+    build:
+      context: ./identity.api
+      dockerfile: Dockerfile
+    ports:
+      - 5096:5096
